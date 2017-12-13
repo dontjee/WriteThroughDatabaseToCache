@@ -20,7 +20,7 @@ namespace WriteThroughDatabaseToCache
 DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersion FROM dbo.ChangeTrackingHistory WHERE TableName = 'dbo.UserAccount')
 
 DECLARE @current_synchronization_version BIGINT = CHANGE_TRACKING_CURRENT_VERSION(); 
-SELECT ua.UserAccountId, ua.Email, ua.DisplayName, ua.CreateDate
+SELECT ct.UserAccountId, ua.Email, ua.DisplayName, ua.CreateDate
 		, CASE WHEN ct.SYS_CHANGE_OPERATION = 'I' THEN 'Insert' WHEN ct.SYS_CHANGE_OPERATION = 'U' THEN 'Update' ELSE 'Delete' END AS OperationType
 FROM dbo.UserAccount AS ua
 	RIGHT OUTER JOIN CHANGETABLE(CHANGES dbo.UserAccount, @last_synchronization_version) AS ct ON ua.UserAccountId = ct.UserAccountId
@@ -39,7 +39,7 @@ DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersio
 
 DECLARE @current_synchronization_version BIGINT = CHANGE_TRACKING_CURRENT_VERSION(); 
 SELECT  
-    c.ChannelId, c.Title, c.UserAccountId, c.ModifyDate
+    ct.ChannelId, c.Title, c.UserAccountId, c.ModifyDate
 	, CASE WHEN ct.SYS_CHANGE_OPERATION = 'I' THEN 'Insert' WHEN ct.SYS_CHANGE_OPERATION = 'U' THEN 'Update' ELSE 'Delete' END AS OperationType
 FROM  dbo.Channel AS c
 	RIGHT OUTER JOIN CHANGETABLE(CHANGES dbo.Channel, @last_synchronization_version) AS ct ON c.ChannelId = ct.ChannelId
@@ -58,7 +58,7 @@ DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersio
 
 DECLARE @current_synchronization_version BIGINT = CHANGE_TRACKING_CURRENT_VERSION(); 
 SELECT  
-    m.MediaId, m.ChannelId, m.Title, m.Height, m.Width, m.Duration, m.ContentUrl
+    ct.MediaId, m.ChannelId, m.Title, m.Height, m.Width, m.Duration, m.ContentUrl
 	, CASE WHEN ct.SYS_CHANGE_OPERATION = 'I' THEN 'Insert' WHEN ct.SYS_CHANGE_OPERATION = 'U' THEN 'Update' ELSE 'Delete' END AS OperationType
 FROM  dbo.Media AS m
 	RIGHT OUTER JOIN CHANGETABLE(CHANGES dbo.Media, @last_synchronization_version) AS ct ON m.MediaId = ct.MediaId
