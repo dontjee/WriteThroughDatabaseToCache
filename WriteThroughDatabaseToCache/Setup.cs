@@ -50,6 +50,22 @@ BEGIN
        ADD CONSTRAINT [PK_Media] PRIMARY KEY CLUSTERED ([MediaId] ASC) WITH (FILLFACTOR = 80, ALLOW_PAGE_LOCKS = OFF, ALLOW_ROW_LOCKS = ON, PAD_INDEX = OFF, IGNORE_DUP_KEY = OFF, STATISTICS_NORECOMPUTE = OFF);
    ALTER TABLE [dbo].[Media]
        ADD CONSTRAINT [FK_Media_ChannelId_Channel_ChannelId] FOREIGN KEY ([ChannelId]) REFERENCES [dbo].[Channel] ([ChannelId]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+   CREATE TABLE [dbo].[ChangeTrackingHistory] (
+       [ChangeTrackingHistoryId]               INT   IDENTITY (1, 1) NOT NULL,
+       [TableName]                             NVARCHAR (512)   NOT NULL,
+      [LastSynchronizationVersion]            BIGINT   NOT NULL,
+   );
+   ALTER TABLE [dbo].[ChangeTrackingHistory]
+       ADD CONSTRAINT [PK_ChangeTrackingHistory] PRIMARY KEY CLUSTERED ([ChangeTrackingHistoryId] ASC) WITH (FILLFACTOR = 80, ALLOW_PAGE_LOCKS = OFF, ALLOW_ROW_LOCKS = ON, PAD_INDEX = OFF, IGNORE_DUP_KEY = OFF, STATISTICS_NORECOMPUTE = OFF);
+
+   -- Add default values for last sync version
+   INSERT INTO dbo.ChangeTrackingHistory( TableName, LastSynchronizationVersion )
+   VALUES ('dbo.UserAccount', CHANGE_TRACKING_MIN_VALID_VERSION(Object_ID('dbo.UserAccount')))
+   INSERT INTO dbo.ChangeTrackingHistory( TableName, LastSynchronizationVersion )
+   VALUES ('dbo.Channel', CHANGE_TRACKING_MIN_VALID_VERSION(Object_ID('dbo.Channel')))
+   INSERT INTO dbo.ChangeTrackingHistory( TableName, LastSynchronizationVersion )
+   VALUES ('dbo.Media', CHANGE_TRACKING_MIN_VALID_VERSION(Object_ID('dbo.Media')))
 END
 ";
                createSchemaCommand.ExecuteScalar();

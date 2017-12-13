@@ -18,9 +18,10 @@ namespace WriteThroughDatabaseToCache
          Setup.CreateSchemaAndEnableChangeTracking( _connectionString );
 
          var repository = new DataRepository( _connectionString );
+         var changeTrackingRepository = new ChangeTrackingRepository( _connectionString );
 
          var cancellationTokenSource = new CancellationTokenSource();
-         var changeTrackerTask = ChangeTracker.StartChangeTrackingMonitorLoopAsync( cancellationTokenSource.Token );
+         var changeTrackerTask = ChangeTracker.StartChangeTrackingMonitorLoopAsync( changeTrackingRepository, cancellationTokenSource.Token );
 
          await InputProcessor.StartAsync( repository );
          Console.WriteLine( "Shutting down..." );
