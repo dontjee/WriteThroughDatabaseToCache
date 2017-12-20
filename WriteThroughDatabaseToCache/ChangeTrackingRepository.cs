@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Threading.Tasks;
-using Dapper;
-
-namespace WriteThroughDatabaseToCache
+﻿namespace WriteThroughDatabaseToCache
 {
    internal class ChangeTrackingRepository
    {
@@ -14,10 +9,10 @@ namespace WriteThroughDatabaseToCache
          _connectionString = connectionString;
       }
 
-      internal Task<IEnumerable<UserAccountChangeModel>> GetLatestUserChangesAsync()
+      internal ChangeTrackingBatch<UserAccountChangeModel> GetLatestUserChanges()
       {
          string cmd = @"
-DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersion FROM dbo.ChangeTrackingHistory WHERE TableName = 'dbo.UserAccount')
+DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersion FROM dbo.CacheChangeTrackingHistory WHERE TableName = 'dbo.UserAccount')
 
 DECLARE @current_synchronization_version BIGINT = CHANGE_TRACKING_CURRENT_VERSION(); 
 SELECT ct.UserAccountId, ua.Email, ua.DisplayName, ua.CreateDate
@@ -25,17 +20,17 @@ SELECT ct.UserAccountId, ua.Email, ua.DisplayName, ua.CreateDate
 FROM dbo.UserAccount AS ua
 	RIGHT OUTER JOIN CHANGETABLE(CHANGES dbo.UserAccount, @last_synchronization_version) AS ct ON ua.UserAccountId = ct.UserAccountId
 
-UPDATE dbo.ChangeTrackingHistory
+UPDATE dbo.CacheChangeTrackingHistory
 SET LastSynchronizationVersion = @current_synchronization_version
 WHERE TableName = 'dbo.UserAccount'
 ";
-         return RunCommandInDatabaseWithSnapshotIsolationModeAsync<UserAccountChangeModel>( cmd );
+         return new ChangeTrackingBatch<UserAccountChangeModel>( _connectionString, cmd );
       }
 
-      internal Task<IEnumerable<ChannelChangeModel>> GetLatestChannelChangesAsync()
+      internal ChangeTrackingBatch<ChannelChangeModel> GetLatestChannelChanges()
       {
          string cmd = @"
-DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersion FROM dbo.ChangeTrackingHistory WHERE TableName = 'dbo.Channel')
+DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersion FROM dbo.CacheChangeTrackingHistory WHERE TableName = 'dbo.Channel')
 
 DECLARE @current_synchronization_version BIGINT = CHANGE_TRACKING_CURRENT_VERSION(); 
 SELECT  
@@ -44,17 +39,17 @@ SELECT
 FROM  dbo.Channel AS c
 	RIGHT OUTER JOIN CHANGETABLE(CHANGES dbo.Channel, @last_synchronization_version) AS ct ON c.ChannelId = ct.ChannelId
 
-UPDATE dbo.ChangeTrackingHistory
+UPDATE dbo.CacheChangeTrackingHistory
 SET LastSynchronizationVersion = @current_synchronization_version
 WHERE TableName = 'dbo.Channel'
 ";
-         return RunCommandInDatabaseWithSnapshotIsolationModeAsync<ChannelChangeModel>( cmd );
+         return new ChangeTrackingBatch<ChannelChangeModel>( _connectionString, cmd );
       }
 
-      internal Task<IEnumerable<MediaChangeModel>> GetLatestMediaChangesAsync()
+      internal ChangeTrackingBatch<MediaChangeModel> GetLatestMediaChanges()
       {
          string cmd = @"
-DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersion FROM dbo.ChangeTrackingHistory WHERE TableName = 'dbo.Media')
+DECLARE @last_synchronization_version BIGINT = (SELECT LastSynchronizationVersion FROM dbo.CacheChangeTrackingHistory WHERE TableName = 'dbo.Media')
 
 DECLARE @current_synchronization_version BIGINT = CHANGE_TRACKING_CURRENT_VERSION(); 
 SELECT  
@@ -63,27 +58,11 @@ SELECT
 FROM  dbo.Media AS m
 	RIGHT OUTER JOIN CHANGETABLE(CHANGES dbo.Media, @last_synchronization_version) AS ct ON m.MediaId = ct.MediaId
 
-UPDATE dbo.ChangeTrackingHistory
+UPDATE dbo.CacheChangeTrackingHistory
 SET LastSynchronizationVersion = @current_synchronization_version
 WHERE TableName = 'dbo.Media'
 ";
-         return RunCommandInDatabaseWithSnapshotIsolationModeAsync<MediaChangeModel>( cmd );
-      }
-
-      private async Task<IEnumerable<T>> RunCommandInDatabaseWithSnapshotIsolationModeAsync<T>( string sql, object param = null )
-      {
-         using ( var connection = new SqlConnection( _connectionString ) )
-         {
-            connection.Open();
-            using ( var transaction = connection.BeginTransaction( System.Data.IsolationLevel.Snapshot ) )
-            {
-               IEnumerable<T> returnValue = await connection.QueryAsync<T>( sql, param, transaction );
-
-               transaction.Commit();
-
-               return returnValue;
-            }
-         }
+         return new ChangeTrackingBatch<MediaChangeModel>( _connectionString, cmd );
       }
    }
 }

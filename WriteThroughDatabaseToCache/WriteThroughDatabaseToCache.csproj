@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChangeTracker.cs" />
+    <Compile Include="ChangeTrackingBatch.cs" />
     <Compile Include="ChangeTrackingRepository.cs" />
     <Compile Include="MediaChangeModel.cs" />
     <Compile Include="ChannelChangeModel.cs" />

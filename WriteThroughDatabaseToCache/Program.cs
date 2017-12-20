@@ -23,10 +23,13 @@ namespace WriteThroughDatabaseToCache
          var cancellationTokenSource = new CancellationTokenSource();
          var changeTrackerTask = ChangeTracker.StartChangeTrackingMonitorLoopAsync( changeTrackingRepository, cancellationTokenSource.Token );
 
+         var exceptionContinuationTask = changeTrackerTask.ContinueWith( t => Console.WriteLine( "ERROR: {0}", t.Exception ), TaskContinuationOptions.OnlyOnFaulted );
+
          await InputProcessor.StartAsync( repository );
          Console.WriteLine( "Shutting down..." );
          cancellationTokenSource.Cancel();
-         await changeTrackerTask;
+
+         await Task.WhenAll( changeTrackerTask, exceptionContinuationTask );
       }
    }
 }
